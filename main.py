@@ -1,5 +1,6 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
 from typing import List, Optional
 from datetime import datetime
 from database.session import get_session, engine
@@ -8,14 +9,17 @@ from database.session import get_session, engine
 from models.category import Category
 from models.book import Book, BookCreate, BookUpdate
 
-# Automatically create database tables on startup
-from sqlmodel import SQLModel
-SQLModel.metadata.create_all(engine)
+# Define lifespan to create tables automatically when Uvicorn starts
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    SQLModel.metadata.create_all(engine)
+    yield
 
 app = FastAPI(
     title="Library API",
     description="A simple library management API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 @app.get("/")
